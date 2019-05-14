@@ -13,9 +13,11 @@ $ rofi-mpd [option]
 ```sh
 -a, --artist 	  	search for artist, then album, then title
 -t, --track 	  	search for a single track in the whole database
+-n, --now		search for a single track in the whole database and play now
 -p, --playlist   	search for a playlist load it
 -j, --jump       	jump to another song in the current playlist
 -l, --longplayer	search for album, then title
+--auto			choose option in rofi
 ```
 
 ## Preview

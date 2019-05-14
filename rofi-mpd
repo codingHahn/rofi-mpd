@@ -1,22 +1,29 @@
 #!/bin/bash
 
-#when set to exit, mpd_control will exit if you press escape
-#when set to break, mpd_control will go the upper level if possible
+# when set to exit, mpd_control will exit if you press escape
+# when set to break, mpd_control will go the upper level if possible
 ESC_ACTION="break"
 # source configuration file for rofi if exists
 
-ROFI="rofi -dmenu -i -p 'Search:'"
+ROFI="rofi -dmenu -i -p Search"
 PORT=6600
 
-addaftercurrent(){
+# check if mpc is in PATH
+
+if [! -x "$(command -v foo)" ]; then 
+	echo "ERROR: mpc is not installed"
+	exit
+fi
+
+add_after_current_song(){
 	
-	#playlist is empty, just add the song
+	# playlist is empty, just add the song
 	if [ "$(mpc -p $PORT playlist | wc -l)" == "0" ]; then
 		mpc -p $PORT add "$1" 
 
-	#there is no current song so mpd is stopped
-	#it seems to be impossible to determine the current songs' position when 
-	#mpd is stopped, so just add to the end
+	# there is no current song so mpd is stopped
+	# it seems to be impossible to determine the current songs' position when 
+	# mpd is stopped, so just add to the end
 	elif [ -z "$(mpc -p $PORT current)" ]; then 
 		mpc -p $PORT play
 		CUR_POS=$(mpc -p $PORT  | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
@@ -25,8 +32,8 @@ addaftercurrent(){
 		mpc -p $PORT move $(($END_POS+1)) $(($CUR_POS+1))	
 		mpc -p $PORT stop
 
-	#at least 1 song is in the playlist, determine the position of the 
-	#currently played song and add $1 after it
+	# at least 1 song is in the playlist, determine the position of the 
+	# currently played song and add $1 after it
 	else
 
 		CUR_POS=$(mpc -p $PORT  | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
@@ -35,7 +42,7 @@ addaftercurrent(){
 		mpc -p $PORT move $(($END_POS+1)) $(($CUR_POS+1))	
 	fi
 }
-addaftercurrentandplay(){
+add_after_current_song_and_play(){
 
 	#playlist is empty, just add the song
 	if [ "$(mpc -p $PORT playlist | wc -l)" == "0" ]; then
@@ -65,10 +72,8 @@ addaftercurrentandplay(){
 	fi
 }
 
-case $1 in
-	
-	-a|--artist)
-	
+search_by_artist () {
+
 	while true; do
 
 		ARTIST="$(mpc -p $PORT list artist | sort -f | $ROFI)";
@@ -117,11 +122,11 @@ case $1 in
 						;;
 
 						"add after current and play")
-						addaftercurrentandplay "$(mpc -p $PORT find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
+						add_after_current_song_and_play "$(mpc -p $PORT find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
 						;;
 
 						"add after current")
-						addaftercurrent "$(mpc -p $PORT find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
+						add_after_current_song "$(mpc -p $PORT find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
 						;;
 
 						"replace")
@@ -141,36 +146,58 @@ case $1 in
 			done
 		done
 	done
-	;;
+}
 
-	-t|--track)
-		
+search_by_track () {
+
 	TITLE=$(mpc -p $PORT list title | sort -f | $ROFI)
 	if [ "$TITLE" = "" ]; then exit; fi
 	
 	SONG=$(mpc -p $PORT find title "$TITLE" | head -1) 
-	addaftercurrentandplay "$SONG"
-	;;
+	add_after_current_song "$SONG"
 
-	-p|--playlist)
+}
+
+search_by_track_play_now () {
+
+	TITLE=$(mpc -p $PORT list title | sort -f | $ROFI)
+	if [ "$TITLE" = "" ]; then exit; fi
+	
+	SONG=$(mpc -p $PORT find title "$TITLE" | head -1) 
+	add_after_current_song_and_play "$SONG"
+
+}
+
+play_playlist () {
+
+	AVAIL_PLAYLISTS=$(mpc -p $PORT lsplaylists)
 	PLAYLIST=$(mpc -p $PORT lsplaylists | $ROFI);
 	if [ "$PLAYLIST" = "" ]; then exit; fi
-	CUR_SONG=$(mpc -p $PORT current)
-	mpc -p $PORT clear
-	mpc -p $PORT load "$PLAYLIST";
-	if [ -n "$CUR_SONG" ]; then mpc -p $PORT play; fi
-	;;
+	# Check if answer is in available playlists; otherwise exit
+	for PL in $AVAIL_PLAYLISTS 
+		do
+		if [ "$PL" = "$PLAYLIST" ]; then
+		CUR_SONG=$(mpc -p $PORT current)
+		mpc -p $PORT clear
+		mpc -p $PORT load "$PLAYLIST";
+		if [ -n "$CUR_SONG" ]; then mpc -p $PORT play; fi
+		fi
+	done
+	exit
 
-	-j|--jump)
-	
+}
+
+jump_to_song () {
+
 	TITLE=$(mpc -p $PORT playlist | $ROFI);
 	if [ "$TITLE" = "" ]; then exit; fi
 	POS=$(mpc -p $PORT playlist | grep -n "$TITLE" | awk -F: '{print $1}')
 	mpc -p $PORT play $POS;
-	;;
 
-	-l|--longplayer)
-	
+}
+
+search_by_album () {
+
 	while true; do
 
 		ALBUM=$(mpc -p $PORT list album | sort -f | $ROFI);
@@ -203,11 +230,11 @@ case $1 in
 					;;
 
 					"add after current and play")
-					addaftercurrentandplay "$(mpc -p $PORT find album "$ALBUM" title "$TITLE" | head -1 )"
+					add_after_current_song_and_play "$(mpc -p $PORT find album "$ALBUM" title "$TITLE" | head -1 )"
 					;;
 
 					"add after current")
-					addaftercurrent "$(mpc -p $PORT find album "$ALBUM" title "$TITLE" | head -1 )"
+					add_after_current_song "$(mpc -p $PORT find album "$ALBUM" title "$TITLE" | head -1 )"
 					;;
 
 					"replace")
@@ -226,18 +253,58 @@ case $1 in
 			done
 		done
 	done
+
+}
+
+display_help () {
+
+	echo "-a, --artist		search for artist, then album, then title"
+    	echo "-t, --track		search for a single track in the whole database"
+    	echo "-n, --now			search for a single track in the whole database and play it now"
+	echo "-p, --playlist		search for a playlist load it"
+	echo "-j, --jump		jump to another song in the current playlist"		 
+	echo "-l, --longplayer		search for album, then title"
+	echo "--auto			choose option in rofi"
+
+}
+case $1 in
+	
+	-a|--artist)
+		search_by_artist
+	;;
+
+	-t|--track)
+		search_by_track
+	;;
+
+	-n|--now)	
+		search_by_track_play_now
+	;;
+
+	-p|--playlist)
+		play_playlist
+	;;
+
+	-j|--jump)
+		jump_to_song	
+	;;
+
+	-l|--longplayer)
+		search_by_album	
+	;;
+
+	--auto)
+		CHOICE=$(echo -e "By Artist\nBy Album\nBy Track\nBy Now\nJump"| $ROFI);
+		if [ "$CHOICE" = "By Artist" ]; then search_by_artist; fi
+		if [ "$CHOICE" = "By Album" ]; then search_by_album; fi
+		if [ "$CHOICE" = "By Track" ]; then search_by_track; fi
+		if [ "$CHOICE" = "By Now" ]; then search_by_track_play_now; fi
+		if [ "$CHOICE" = "Jump" ]; then jump_to_song; fi
+		exit
 	;;
 
 	-h|--help)
-	echo "-a, --artist		search for artist, then album, then title"
-    	echo "-t, --track		search for a single track in the whole database"
-	echo "-p, --playlist		search for a playlist load it"
-	echo "-j, --jump		jump to another song in the current playlist"		 
-	echo "-l, --longplayer	search for album, then title"
-	
-	
-	
-	
+		display_help
 	;;
 	
 	*)
@@ -246,3 +313,4 @@ case $1 in
 	;;
 
 esac
+
