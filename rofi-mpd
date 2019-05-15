@@ -174,6 +174,7 @@ play_playlist () {
 	PLAYLIST=$(mpc -p $PORT lsplaylists | $ROFI);
 	if [ "$PLAYLIST" = "" ]; then exit; fi
 	# Check if answer is in available playlists; otherwise exit
+	# Prevents non-existant playlist from being added
 	for PL in $AVAIL_PLAYLISTS 
 		do
 		if [ "$PL" = "$PLAYLIST" ]; then
@@ -256,6 +257,12 @@ search_by_album () {
 
 }
 
+shuffle() {
+
+	mpc -p $PORT shuffle
+
+}
+
 display_help () {
 
 	echo "-a, --artist		search for artist, then album, then title"
@@ -264,6 +271,7 @@ display_help () {
 	echo "-p, --playlist		search for a playlist load it"
 	echo "-j, --jump		jump to another song in the current playlist"		 
 	echo "-l, --longplayer		search for album, then title"
+	echo "-s, --shuffle		shuffle songs"
 	echo "--auto			choose option in rofi"
 
 }
@@ -293,13 +301,17 @@ case $1 in
 		search_by_album	
 	;;
 
+	-s|--shuffle)
+		shuffle
+	;;
 	--auto)
-		CHOICE=$(echo -e "By Artist\nBy Album\nBy Track\nBy Now\nJump"| $ROFI);
+		CHOICE=$(echo -e "By Artist\nBy Album\nBy Track\nBy Now\nJump\nShuffle"| $ROFI);
 		if [ "$CHOICE" = "By Artist" ]; then search_by_artist; fi
 		if [ "$CHOICE" = "By Album" ]; then search_by_album; fi
 		if [ "$CHOICE" = "By Track" ]; then search_by_track; fi
 		if [ "$CHOICE" = "By Now" ]; then search_by_track_play_now; fi
 		if [ "$CHOICE" = "Jump" ]; then jump_to_song; fi
+		if [ "$CHOICE" = "Shuffle" ]; then shuffle; fi
 		exit
 	;;
 
