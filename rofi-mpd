@@ -13,7 +13,7 @@ MPC="mpc -p ${PORT}"
 # check if mpc is in PATH
 
 if [! -x "$(command -v mpc)" ]; then 
-	echo "ERROR: mpc is not installed"
+	echo "ERROR: mpc is not installed or not in PATH"
 	exit
 fi
 
