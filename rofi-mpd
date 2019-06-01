@@ -194,7 +194,7 @@ jump_to_song () {
 
 	TITLE=$($MPC playlist | $ROFI);
 	if [ "$TITLE" = "" ]; then exit; fi
-	POS=$($MPC playlist | grep -n "$TITLE" | awk -F: '{print $1}')
+	POS=$($MPC playlist | grep -in "$TITLE" | awk -F: '{print $1}'| head -n 1)
 	$MPC play $POS;
 
 }
