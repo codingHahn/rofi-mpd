@@ -268,9 +268,9 @@ shuffle() {
 control() {
 	
 	CHOICE=$(echo -e "Toggle Play\nNext\nPrevious\n"| $ROFI);
-	if [ "$CHOICE" = "Toggle Play" ]; then $($MPC toggle); fi
-	if [ "$CHOICE" = "Next" ]; 	  then $($MPC next); fi
-	if [ "$CHOICE" = "Previous" ]; 	  then $($MPC prev); fi
+	if [ "$CHOICE" = "Toggle Play" ]; then $($MPC -q toggle); fi
+	if [ "$CHOICE" = "Next" ]; 	  then $($MPC -q next); fi
+	if [ "$CHOICE" = "Previous" ]; 	  then $($MPC -q prev); fi
 
 }
 
