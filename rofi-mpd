@@ -8,7 +8,7 @@ ESC_ACTION="break"
 PORT=6600
 
 ROFI="rofi -dmenu -i -p Search"
-MPC="mpc -p ${PORT}"
+MPC="mpc -q -p ${PORT}"
 
 # check if mpc is in PATH
 
